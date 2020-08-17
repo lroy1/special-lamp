@@ -1,0 +1,641 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Scanner;
+
+public class postgresTest {
+    public static void main(String[] args){
+    	    String url = "jdbc:postgresql://localhost/template1";
+        String user = "admin";
+        String password = "";
+        String sql;
+        try (Connection connection = DriverManager.getConnection(url, user, password);)
+		{
+        	Statement statement = connection.createStatement();
+
+         sql = " create type privileges as enum('admin', 'sales', 'hr', 'engineering'); "  		
+            		+ "CREATE TABLE Employee_User(" + 
+            		" SSN        INTEGER NOT NULL ," + 
+            		" ID         INTEGER NOT NULL UNIQUE," + 
+            		" Password   varchar(255) NOT NULL ," + 
+            		" FirstName  varchar(255) NOT NULL ," + 
+            		" LastName   varchar(255) NOT NULL ," + 
+            		" Salary     INTEGER," + 
+            		" SalaryType varchar(255)," + 
+            		" JobType    varchar(255)," + 
+            		" Privilege  privileges NOT NULL ," + 
+            		" LoginTime  date," + 
+            		" LogoutTime date," + 
+            		"PRIMARY KEY (SSN, ID)" + 
+            		//"FOREIGN KEY  (ID) REFERENCES Inventory(ID)" + 
+            		");"; 
+
+            statement.executeUpdate(sql);
+
+            //login
+			Scanner in = new Scanner(System.in);
+			boolean loggedin = false;
+            ResultSet rs;
+            String input_username,input_password, privileges;
+            do {
+            System.out.print("Enter username (hint: your firstname): ");
+            input_username = in.nextLine();
+            System.out.print("Enter Password: ");
+            input_password = in.nextLine();   
+            statement = connection.createStatement();   	
+            // Execute SQL statement returns a ResultSet object.
+            sql = "Select * from Employee_user where firstname='"+input_username+"' and password='"+input_password+"';";
+            rs = statement.executeQuery(sql);
+            System.out.println();
+            } while(!rs.next());
+           privileges = rs.getString("privilege");
+            int user_id = rs.getInt("ID");
+            System.out.println("Welcome, You are from the "+privileges +" department");
+            loggedin = true;
+            //SET LOGIN TIME
+            statement = connection.createStatement();   	
+            sql = "update employee_user SET logintime=CURRENT_DATE WHERE ID="+user_id+";";
+            statement.executeUpdate(sql);
+
+            if (privileges.equals("admin") ){
+            	char selection = ' ';
+	do {
+		System.out.println("Enter 'C' to create new employee,'S' to Update tables, 'G' to Update employee privilege,'B' for business report, or 'L' to logout");
+		selection = in.next().charAt(0);
+		if (selection == 'L' ){
+			break;
+		}
+		else if( selection =='G'){
+			System.out.println("enter the Employee_id to update");
+			int emp_id=Integer.parseInt(in.next());
+			System.out.println("update privilege to?");
+			String new_privilege= in.next();
+			
+			statement =connection.createStatement();
+			sql="UPDATE Employee_User SET Privilege='"+new_privilege+"' WHERE ID="+emp_id+";";
+			statement.executeUpdate(sql);
+			System.out.println("Employee record updated");
+			
+		}
+		else if (selection == 'C'){
+			System.out.println("Enter new employee First Name");
+			String f_name = in.next();
+			System.out.println("Enter new employee Last Name");
+			String l_name = in.next();
+			System.out.println("Enter new employee Password");
+			String pass = in.next();
+			System.out.println("Enter new employee SSN");
+			int ssn = Integer.parseInt(in.next());
+			System.out.println("Enter new employee ID");
+			int emp_id = Integer.parseInt(in.next());
+			System.out.println("Enter new employee salary");
+			float salary = Integer.parseInt(in.next());
+			System.out.println("Enter new employee salary type");
+			String stype = in.next();
+			System.out.println("Enter new employee job type");
+			String jtype = in.next();
+			System.out.println("Enter new employee privilege");
+			String new_emp_privilege = in.next();
+			
+			statement =connection.createStatement();
+			sql="INSERT INTO Employee_User(FirstName,LastName,Password,SSN,ID,Salary,SalaryType,JobType,Privilege) values('"+f_name+"', '"+l_name+"', '"+pass+"', "+ssn+", "+emp_id+", "+salary+", '"+stype+"', '"+jtype+"', '"+new_emp_privilege+"');";
+			statement.executeUpdate(sql);
+			System.out.println("Employee record created");
+		}
+		else if (selection =='S'){
+			System.out.println ("which table would you like to update: type 'O' for order, 'M' for model, 'I' for inventory");
+			String nextentry= in.next();
+			if(nextentry.equals("O")){
+				System.out.println("Enter Order ID");
+				int o_id = Integer.parseInt(in.next());
+				System.out.println("New Customer ID");
+				int c_id = Integer.parseInt(in.next());
+				System.out.println("New Employee ID");
+				int e_id = Integer.parseInt(in.next());
+				System.out.println("New Model");
+				String model1= in.next();
+				System.out.println("New Sale Value");
+				float sv = Float.parseFloat(in.next());
+				
+				sql="UPDATE Orders SET Customer_id="+c_id+", Employee_id="+e_id+", Model_Name='"+model1+"', Salevalue="+sv+" WHERE Order_id="+o_id+";"; 
+				statement.executeUpdate(sql);
+				System.out.println("Order Updated");
+			}
+			else if (nextentry.equals("M")){
+				System.out.println("Enter Number");
+				int num = Integer.parseInt(in.next());
+				System.out.println("New Sale Price");
+				float sp = Float.parseFloat(in.next());
+				
+				sql="UPDATE Model SET SalesPrice="+sp+" WHERE Number="+num+";"; 
+				statement.executeUpdate(sql);
+				System.out.println("Model Updated");
+			}
+			else if(nextentry.equals ("I")){
+				System.out.println("Enter Inventory Id");
+				int i_id = Integer.parseInt(in.next());
+				System.out.println("New Lead Time");
+				int ltime = Integer.parseInt(in.next());
+				System.out.println("New Category type");
+				String ctype= in.next();
+				System.out.println("New Cost");
+				float cost = Float.parseFloat(in.next());
+				
+				sql="UPDATE Inventory SET Cost="+cost+", CategoryType='"+ctype+"', LeadTime="+ltime+" WHERE ID="+i_id+";"; 
+				statement.executeUpdate(sql);
+				System.out.println("Inventory Updated");
+			}
+		
+		}
+		else if (selection =='B'){
+			System.out.println("Enter which type of report you want to see: type 'TR' for Total  revenue from sale with associated employee and customer, 'M' for models bought by customers, 'O' for order with associated parts and available inventory, 'ER' for expense reports with employee salary and cost of models");
+			String nextentry =in.next();
+			if (nextentry.equals("TR")){
+				statement =connection.createStatement();
+				sql="SELECT SUM(SaleValue) AS total FROM Orders,Customer, Employee_User  WHERE Orders.Employee_id = Employee_User.ID AND Orders.Customer_id=Customer.Cust_id";
+				rs=statement.executeQuery(sql);
+				while(rs.next()){
+					System.out.println(rs.getInt("total"));
+				}
+
+
+
+			}
+			else if (nextentry.equals("M")){
+				statement =connection.createStatement();
+				sql="SELECT COUNT(Number) AS total FROM Model, Orders  WHERE Orders.Model_Name= Model.Model_Name";
+				rs=statement.executeQuery(sql);
+				while(rs.next()){
+					System.out.println(rs.getString("total"));
+				}
+
+			}
+			else if (nextentry.equals("O")){
+Statement inner_stmt;
+            	   		ResultSet inner_rs;
+            	   		String Model_Name,inner_sql;
+            	        	int OrderNum, model_number,inventory_count=0, employee_id,customer_id,salevalue;
+                   	statement = connection.createStatement();   	
+                   	sql = "SELECT Orders.Order_id OrderNum, Orders.Model_name model_name, Orders.customer_id customer_id, Orders.employee_id employee_id,  Orders.salevalue salevalue FROM Orders;";
+            	        rs=statement.executeQuery(sql);
+            	        System.out.println("Order Number  |  Model Name  |  Customer ID  |  Employee ID  |  Cost | Inventory Count");
+            	        while(rs.next()){
+            	        	     OrderNum=rs.getInt("orderNum");
+          		     Model_Name = rs.getString("model_name");
+          		     customer_id = rs.getInt("customer_id");
+          		     employee_id = rs.getInt("employee_id");
+          		     salevalue = rs.getInt("salevalue");
+            	                   inner_stmt = connection.createStatement();   	
+            	     inner_sql = "select count(*) inventory_count from model where model.model_name='"+Model_Name+"';";
+            	     inner_rs=inner_stmt.executeQuery(inner_sql);
+            	     while(inner_rs.next()){
+            	            inventory_count = inner_rs.getInt("inventory_count");
+            	       	      }
+            	         	     System.out.println(OrderNum+ "  |  "+ Model_Name+ "  |  "+ customer_id+ "  |  "+ employee_id+ "  |  "+ salevalue+ "  |  "+ inventory_count);
+            	                
+            	         }
+
+			}
+			else if (nextentry.equals ("ER")){
+				statement =connection.createStatement();
+							sql="SELECT * FROM Employee_User; ";
+							rs = statement.executeQuery(sql);
+							Statement stmt1 =connection.createStatement();
+							ResultSet s;
+							String sql2 = "SELECT * FROM Inventory; ";
+							s = stmt1.executeQuery(sql2);
+							while (rs.next()){
+								System.out.println(rs.getInt("Salary")+ " "+ rs.getInt("ID"));
+							}
+							while (s.next()){		
+									System.out.println(s.getFloat("Cost"));
+							}
+		
+		}
+
+            		
+            
+		}
+	} while(selection!='L');
+	loggedin = false;
+	//SET LOGIN TIME
+	statement = connection.createStatement();   	
+	sql = "update employee_user SET logouttime=CURRENT_DATE WHERE ID="+user_id+";";
+	statement.executeUpdate(sql);
+	System.out.println("Logged Out");
+    }
+            else if (privileges.equals("sales")) {
+            	System.out.println("Enter 'V' to view customer, 'U' to Update customer info,  'C' to create order,'A' to access sales report, or  'L' to logout");
+            	char option  = in.next().charAt(0);
+             do {
+		if (option  == 'L' ){
+			break;
+		}
+		if (option =='V'){
+			System.out.println("enter the customer ID to view records or enter all to view all");
+			String entry = in.next();
+			if (entry.equals("all")){
+				sql = "SELECT * FROM Customer;";
+				rs = statement.executeQuery(sql);
+				while (rs.next()){
+					System.out.println(rs.getInt("Cust_id")+ " "+ rs.getString("F_Name")+" "+rs.getString("L_Name"));
+				}	
+			}
+			else{
+				sql="SELECT*FROM Customer WHERE Cust_id="+entry+";";
+				rs = statement.executeQuery(sql);
+				while (rs.next()){
+					System.out.println(rs.getInt("Cust_id")+ " "+ rs.getString("F_Name")+" "+rs.getString("L_Name"));
+				}	
+			}
+			System.out.println("Enter 'V' to view customer, 'U' to Update customer info,  'C' to create order,'A' to access sales report, or  'L' to logout");
+			option  = in.next().charAt(0);
+		}
+		else if( option == 'U'){
+			System.out.println("enter the Cust_id to update");
+			int C_id=Integer.parseInt(in.next());
+			System.out.println("update Last name?");
+			String LN=in.next();
+			System.out.println("update First Name?");
+			String FN= in.next();
+			
+			statement =connection.createStatement();
+			sql="UPDATE Customer SET F_Name='"+FN+"', L_Name='"+LN+"' WHERE Cust_id="+C_id+";";
+			statement.executeUpdate(sql);
+			System.out.println("Customer updated");
+			System.out.println("Enter 'V' to view customer, 'U' to Update customer info,  'C' to create order,'A' to access sales report, or  'L' to logout");
+			option  = in.next().charAt(0);
+			
+		}
+		else if( option =='C'){
+			System.out.println("enter the order number");
+			int num =Integer.parseInt(in.next());
+			System.out.println("enter cust_Id");
+			int ID=Integer.parseInt(in.next());
+			System.out.println("enter Employee ID");
+			int E_ID=Integer.parseInt(in.next());
+			System.out.println("enter model");
+			String M =in.next(); 
+			System.out.println("enter sales value");
+			float val =Float.parseFloat(in.next());
+			
+			
+			statement =connection.createStatement();
+			statement.executeUpdate("INSERT INTO Orders(Order_id,Customer_id,Employee_id,Model_Name,SaleValue) " + "VALUES ("+num+", "+ID+", "+E_ID+", '"+M+"', "+val+")");
+			System.out.println("order created");
+			System.out.println("Enter 'V' to view customer, 'U' to Update customer info,  'C' to create order,'A' to access sales report, or  'L' to logout");
+			option  = in.next().charAt(0);
+			
+		}
+		else if (option =='A'){
+			sql = "SELECT * FROM Orders";
+			rs = statement.executeQuery(sql);
+			while (rs.next()){
+					System.out.println(rs.getInt("SaleValue")+ " "+ rs.getInt("Order_id")+" "+rs.getString("Model_Name"));
+				}	
+			
+			System.out.println("Enter 'V' to view customer, 'U' to Update customer info,  'C' to create order,'A' to access sales report, or  'L' to logout");
+			option  = in.next().charAt(0);
+			}
+
+            } while(option!='L');
+         	loggedin = false;
+	        	//SET LOGIN TIME
+	        	statement = connection.createStatement();   	
+	        	sql = "update employee_user SET logouttime=CURRENT_DATE WHERE ID="+user_id+";";
+	        	statement.executeUpdate(sql);
+	        	System.out.println("Logged Out");
+                         	
+           }
+
+
+            else if (privileges.equals("hr")) {
+		System.out.println("Enter 'V' to view employee info, 'U' to Update employee info, or 'L' to logout");
+		char selection = in.next().charAt(0);
+		do {
+		if (selection == 'L' ){
+			break;
+		}
+		if (selection=='V'){
+			System.out.println("enter the employee Last Name to view records or enter all to view all");
+			String nextentry= in.next();
+			if (nextentry.equals("all")){
+				sql = "SELECT * FROM Employee_User";
+				rs = statement.executeQuery(sql);
+				while (rs.next()){
+					System.out.println(rs.getInt("SSN")+ " "+ rs.getInt("ID")+" "+rs.getString("FirstName")+" "+rs.getString("LastName")+ " "+rs.getFloat("Salary")+ " "+rs.getString("Privilege"));
+				}	
+			}
+			else{
+				sql="SELECT*FROM Employee_User WHERE LastName='"+nextentry+"';";
+				rs = statement.executeQuery(sql);
+				while (rs.next()){
+					System.out.println(rs.getInt("SSN")+ " "+ rs.getInt("ID")+" "+rs.getString("FirstName")+" "+rs.getString("LastName")+ " "+rs.getFloat("Salary")+ " "+rs.getString("Privilege"));
+				}	
+			}
+			System.out.println("Enter 'V' to view employee info, 'U' to Update employee info, or 'L' to logout");
+			selection = in.next().charAt(0);
+		}
+		else if( selection =='U'){
+			System.out.println("enter the Employee_id to update");
+			int emp_id=Integer.parseInt(in.next());
+			System.out.println("update Salary to?");
+			int new_salary=Integer.parseInt(in.next());
+			System.out.println("Update Last Name to?");
+			String l_name = in.next();
+			System.out.println("Update Salary Type TO?");
+			String stype = in.next();
+		
+			statement =connection.createStatement();
+			sql="UPDATE Employee_User SET Salary="+new_salary+", LastName='"+l_name+"', SalaryType='"+stype+"' WHERE ID="+emp_id+";";
+			statement.executeUpdate(sql);
+			System.out.println("Employee record updated");
+			
+			System.out.println("Enter 'V' to view employee info, 'U' to Update employee info, or 'L' to logout");
+			selection = in.next().charAt(0);
+		}
+		}while(selection!='L');
+	    	//SET LOGIN TIME
+	    	statement = connection.createStatement();   	
+	    	sql = "update employee_user SET logouttime=CURRENT_DATE WHERE ID="+user_id+";";
+	    	statement.executeUpdate(sql);
+	    	System.out.println("Logged Out");
+            	
+        }
+	
+            else if (privileges.equals("engineering")) {
+            char option=' ';
+            	do {
+            	 System.out.println("Enter “V” to view employee info, “M” to access and update model, “I” to access and update inventory, or 'L' to logout");
+            	 option = in.next().charAt(0);
+            	 if(option == 'L'|| option == 'l') {
+            		 break;
+            	 }
+            	 if(option == 'M'|| option == 'm') {
+            		System.out.println("Enter “A” to access model or “U” to update model,  or “P” to add new Model: ");
+            		 char option_for_model = in.next().charAt(0);
+                	 if(option_for_model == 'P'|| option_for_model == 'p') {
+                		 System.out.println("Model Number to Add: ");
+                		 int model_number = Integer.parseInt(in.next());
+			 System.out.println("Enter model_name: ");
+			 String M =in.next(); 
+                		 System.out.println("Enter Sale Price: ");
+                		 float model_saleprice = Float.parseFloat(in.next());
+                		 statement = connection.createStatement();   	
+    	                 // Execute SQL statement returns a ResultSet object.
+    	                 sql = "INSERT INTO Model(number,Model_Name, SalesPrice) VALUES("+model_number+", ‘"+M+"’ ,"+model_saleprice+");";
+    	                 statement.executeUpdate(sql);
+    	                 System.out.println("Model Added");
+    	                 System.out.println();
+                	 }
+                	 else if(option_for_model == 'U'|| option_for_model == 'u') {
+            		 System.out.println("Model Number to Update: ");
+                	 int model_to_update = Integer.parseInt(in.next());
+                	 System.out.println("Change Salesprice to: ");
+                	float new_model_value = Float.parseFloat(in.next());
+            		 statement = connection.createStatement();   	
+                 // Execute SQL statement returns a ResultSet object.
+                 sql = "UPDATE Model SET SalesPrice =" + new_model_value + 
+                 		" WHERE number="+model_to_update+";";
+                 statement.executeUpdate(sql);
+                 System.out.println("Item Updated");
+                 System.out.println();
+                	 }
+                	 else if(option_for_model == 'A'|| option_for_model == 'a') {
+                		sql = "SELECT number,SalesPrice FROM Model;";
+               	rs = statement.executeQuery(sql);
+               	System.out.println("number  |  Sales Price");
+               	while(rs.next()){	 
+              		         System.out.println(rs.getString("number") + "  |  "+ rs.getString("SalesPrice"));
+                    	 }
+                    	 System.out.println();
+                	 }
+                 
+            	 }
+            	 
+            	 else if(option == 'V'|| option == 'v') {
+            		sql = "SELECT * FROM Employee_User;";
+                     	rs = statement.executeQuery(sql);
+                     	System.out.println("Name  |  Salary  | Job Title ");
+                    	 while(rs.next()){	 
+System.out.println(rs.getString("FirstName")+ " "+ rs.getString("LastName")+ "  |  "+ rs.getString("Salary")+ "  |  "+ rs.getString("Privilege"));
+                   	  }
+                    	 System.out.println();
+            	 }
+            	 else if(option == 'I'|| option == 'i') {
+            		 System.out.println("Enter “A” to access inventory or “U” to update inventory: ");
+                	 char option_for_inventory = in.next().charAt(0);
+                	 if(option_for_inventory == 'U'|| option_for_inventory == 'u') {
+            		 System.out.println("Inventory ID to Update: ");
+                	 int model_to_update = Integer.parseInt(in.next());
+                	 System.out.println("Change ‘Cost’ to: ");
+                	 float new_model_value = Float.parseFloat(in.next());
+                	 System.out.println("Change ‘Category Type’ to: ");
+                	 String new_model_value_cat_type = in.next();
+            		 statement = connection.createStatement();   	
+                 // Execute SQL statement returns a ResultSet object.
+                 sql = "UPDATE Inventory SET Cost =" + new_model_value + 
+                 		",CategoryType='"+new_model_value_cat_type+
+                		 "' WHERE ID="+model_to_update+";";
+                 statement.executeUpdate(sql);
+                 System.out.println("Item Updated");
+                 System.out.println();
+              		}
+                	else if(option_for_inventory == 'A'|| option_for_inventory == 'a') {
+                	 sql = "SELECT * FROM Inventory;";
+                    	 rs = statement.executeQuery(sql);
+                	 System.out.println("ID  |  Cost  |  Category Type");
+                     	while(rs.next()){	 
+System.out.println(rs.getString("ID") + "  |  "+ rs.getString("Cost") + "  |  "+ rs.getString("categorytype"));
+                   	 }
+                     	System.out.println();
+                	 }
+            	 }
+            	 else {
+            		System.out.println("ERROR Enter Valid Option: ");
+            	 }
+            }
+            	while(option!='L' || option != 'l');
+            	loggedin = false;
+            	//SET LOGIN TIME
+            	statement = connection.createStatement();   	
+            	sql = "update employee_user SET logouttime=CURRENT_DATE WHERE ID="+user_id+";";
+            	statement.executeUpdate(sql);
+            	System.out.println("Logged Out");
+            }
+        
+		    }
+		    
+		//end of try statement so end of code here
+		catch (SQLException ex) {
+		
+		    Logger lgr = Logger.getLogger(postgresTest.class.getName());
+		    lgr.log(Level.SEVERE, ex.getMessage(), ex);
+		}
+ 
+
+    }
+ 
+    }
+
+////////////INVENTORY///////////
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Scanner;
+
+public class Inventory {
+
+	public static void main(String[] args) throws SQLException{
+		String url = "jdbc:postgresql://localhost/template1";
+        String user = "admin";
+        String password = "";
+        try (Connection connection = DriverManager.getConnection(url, user, password);){
+			String inventoryTable = "CREATE TABLE Inventory("
+					+ "ID INTEGER,"
+					+ "Cost NUMERIC (8,2),"
+					+ "CategoryType varchar(20),"
+					+ "LeadTime INTEGER,"
+					+ "Primary Key (ID) "
+					+ ");";
+			Statement stm = connection.createStatement();
+			stm.executeUpdate(inventoryTable);
+			stm.close();
+			connection.close();
+			
+		}
+		catch(Exception e) 
+        { 
+            System.out.println(e); 
+        } 
+
+	}
+
+}
+
+////////////////MODEL/////////////////
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Scanner;
+
+public class Model {
+	public static void main(String[] args) throws SQLException{
+		String url = "jdbc:postgresql://localhost/template1";
+        String user = "admin";
+        String password = "";
+        try (Connection connection = DriverManager.getConnection(url, user, password);){
+        	Statement stm;
+            stm = connection.createStatement();
+			String modelTable = "CREATE TABLE Model"
+					+ "(Number INTEGER,"
+					+" Model_Name VARCHAR(20) NOT NULL UNIQUE, " 
+					+ "SalesPrice NUMERIC(8,2),"
+					+ "Primary Key (Number) );";
+			stm.executeUpdate(modelTable);
+			stm.close();
+			connection.close();
+			
+		}
+		catch(Exception e) 
+        { 
+            System.out.println(e); 
+        } 
+
+	}
+
+}
+
+/////////////////CUSTOMER///////////////
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Scanner;
+
+public class Customer {
+ 
+      public static void main(String [] args) throws SQLException{
+    	  String url = "jdbc:postgresql://localhost/template1";
+          String user = "admin";
+          String password = "";
+          try (Connection connection = DriverManager.getConnection(url, user, password);){
+        	  Statement stmt;
+              stmt = connection.createStatement();
+              String sql = "CREATE TABLE Customer " +
+                           "(Cust_id INTEGER not NULL , " +
+                           " F_name VARCHAR(25), " + 
+                           " L_Name VARCHAR(25), " + 
+                           " PRIMARY KEY (Cust_id ));"; 
+
+      stmt.executeUpdate(sql);
+      System.out.println("Created table in given database...");
+      stmt.close();
+      connection.close();
+      
+   } catch (Exception v){
+       System.out.println(v);
+   }
+
+ }
+}
+
+////////////////////ORDER///////////////////////
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.Scanner;
+
+public class Order {
+ 
+      public static void main(String [] args) throws SQLException{
+    	  String url = "jdbc:postgresql://localhost/template1";
+          String user = "admin";
+          String password = "";
+          try (Connection connection = DriverManager.getConnection(url, user, password);){
+          	Statement stmt;
+          stmt = connection.createStatement();
+
+              String sql = "CREATE TABLE Orders( " +
+                           " Order_id INTEGER NOT NULL, " +
+                           " Customer_id INTEGER NOT NULL, " + 
+                           " Employee_id INTEGER NOT NULL, " + 
+                           " Model_Name VARCHAR(20) NOT NULL, " + 
+                           " SaleValue NUMERIC(8,2) NOT NULL, " + 
+                           " PRIMARY KEY (Order_id),"+
+                           " FOREIGN KEY (Customer_id) REFERENCES Customer(Cust_id),"+
+                           " FOREIGN KEY (Employee_id) REFERENCES Employee_User(ID),"+
+                           " FOREIGN KEY (Model_Name)  REFERENCES Model(Model_Name)"+
+                           ");"; 
+
+      stmt.executeUpdate(sql);
+      System.out.println("Created table in given database...");
+      stmt.close();
+        		  connection.close();
+      
+   } catch (Exception v){
+       System.out.println(v);
+   }
+
+ }
+}
+
